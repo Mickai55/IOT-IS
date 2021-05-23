@@ -1,6 +1,9 @@
 # Raport de analiza
 [Analiza](https://docs.google.com/document/d/1U1CrCt4-I_2qrXzfre6OU5KdJAmg8am1RlijKM3MC4I)
 
+# Documentatie
+[Documentatie](https://docs.google.com/document/d/1zbsQ2z-aaY_O1OpmMubE-6lUG5OUfGLlhEdu6eDCvUg)
+
 # Example IoT Device
 
 ## Getting Started
@@ -20,31 +23,31 @@ On Ubuntu, you can install a pre-built binary as described [here](http://pistach
 
 #### Using Make
 
-You can build the `microwave` executable by running `make`.
+You can build the `Magic Shower` executable by running `make`.
 
 ### Manually
 
 A step by step series of examples that tell you how to get a development env running
 
 You should open the terminal, navigate into the root folder of this repository, and run\
-`g++ microwave_example.cpp -o microwave -lpistache -lcrypto -lssl -lpthread`
+`g++ shower.cpp -o shower -lpistache -lcrypto -lssl -lpthread`
 
-This will compile the project using g++, into an executable called `microwave` using the libraries `pistache`, `crypto`, `ssl`, `pthread`. You only really want pistache, but the last three are dependencies of the former.
+This will compile the project using g++, into an executable called `shower` using the libraries `pistache`, `crypto`, `ssl`, `pthread`. You only really want pistache, but the last three are dependencies of the former.
 Note that in this compilation process, the order of the libraries is important.
 
 ### Running
 
 To start the server run\
-`./microwave`
+`./shower`
 
 Your server should display the number of cores being used and no errors.
 
 To test, open up another terminal, and type\
-`curl http://localhost:9080/ready`
+`curl http://localhost:9080/turnWaterOn`
 
 Number 1 should display.
 
-Now you have the server running
+"Water has been turned on" should display.
 
 
 ## Built With

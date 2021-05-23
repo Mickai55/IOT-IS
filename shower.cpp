@@ -14,6 +14,34 @@
 using namespace std;
 using namespace Pistache;
 
+struct Profil {
+    int lastShowerTemperature;
+    int lastMusicVolume;
+    bool wasMusicOn;
+
+    Profil(): lastMusicVolume(50), lastShowerTemperature(30), wasMusicOn(false) {}
+
+    Profil(int lastMusicVolume, int lastShowerTemperature, bool wasMusicOn) {
+        this->lastMusicVolume = lastMusicVolume;
+        this->lastShowerTemperature = lastShowerTemperature;
+        this->wasMusicOn = wasMusicOn;
+    }
+};
+
+std::unordered_map<string, Profil> previouslyConnectedDevices;
+
+void intialize_mocking_data() {
+    Profil p1 = Profil(55, 35, false);
+    Profil p2 = Profil(85, 25, true);
+    Profil p3 = Profil(67, 35, true);
+    Profil p4 = Profil(55, 35, true);
+
+    previouslyConnectedDevices["AB123"] = p1; 
+    previouslyConnectedDevices["CD123"] = p2; 
+    previouslyConnectedDevices["EF123"] = p3; 
+    previouslyConnectedDevices["GH123"] = p4; 
+}
+
 // General advice: pay atetntion to the namespaces that you use in various contexts. Could prevent headaches.
 
 // This is just a helper function to preety-print the Cookies that one of the enpoints shall receive.
@@ -158,7 +186,14 @@ private:
     // Defining the class of the Shower. It should model the entire configuration of the Shower
     class Shower {
     public:
-        explicit Shower(){ showerStatus = false; connectedDevice.connected = false; music = false;}
+        explicit Shower(){ 
+            showerStatus = false; 
+            connectedDevice.connected = false; 
+            music = false;
+            musicVolume = 50;
+            waterTemperature.name = "waterTemperature";
+            waterTemperature.value = 30;
+        }
 
         // Setting the value for one of the settings. Hardcoded for the defrosting option
         int set(std::string name, std::string value){
@@ -172,30 +207,36 @@ private:
                 }
                 waterTemperature.value = temp;
 
+                if (connectedDevice.connected) {
+                    previouslyConnectedDevices[connectedDevice.name].lastShowerTemperature = temp;
+                }
+
                 return 1;
             }
 
             if(name == "music"){
 
-             if(value == "on"){
+                if(value == "on"){
 
-                 if(music == true)
-                 {return 0;}
+                    if(music == true)
+                    {return 0;}
 
-                music = true;
-                musicVolume = 50;
+                    music = true;
 
+                }else if(value == "off"){
+
+                    if(music == false)
+                    {return 0;}
+
+                    music = false;
+
+                    
+                }
+
+                if (connectedDevice.connected) {
+                    previouslyConnectedDevices[connectedDevice.name].wasMusicOn = music;
+                }
                 return 1;
-
-             }else if(value == "off"){
-
-                if(music == false)
-                 {return 0;}
-
-                 music = false;
-
-                 return 1;
-             }
             }
 
             if(name == "musicVolume"){
@@ -210,6 +251,10 @@ private:
                 }
 
                 musicVolume = volume;
+
+                if (connectedDevice.connected) {
+                    previouslyConnectedDevices[connectedDevice.name].wasMusicOn = music;
+                }
 
                 return 1;
             }
@@ -227,16 +272,24 @@ private:
 
                     return 1;
                 }
+                
+                auto profilFromMap = previouslyConnectedDevices.find(value);
+                if (profilFromMap != previouslyConnectedDevices.end()) {
+                    Profil profil = profilFromMap->second;
+                    music = profil.wasMusicOn;
+                    musicVolume = profil.lastMusicVolume;
+                    waterTemperature.name = "waterTemperature";
+                    waterTemperature.value = profil.lastShowerTemperature;
+                } else {
+                    previouslyConnectedDevices[value] = Profil();
+                }
+            
+                connectedDevice.name = value;
+                connectedDevice.connected = true;
 
-                 connectedDevice.name = value;
-                 connectedDevice.connected = true;
-
-                 return 1;
+                return 1;
                  
              }
-
-            
-
 
             return 0;
         }
@@ -336,6 +389,8 @@ int main(int argc, char *argv[]) {
         perror("install signal handler failed");
         return 1;
     }
+
+    intialize_mocking_data();
 
     // Set a port on which your server to communicate
     Port port(9080);

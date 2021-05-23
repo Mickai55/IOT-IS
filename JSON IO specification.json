@@ -147,7 +147,7 @@
                 "description": "Parameters for the setting chosen",
                 "token-type":"string",
                 "byte-size":10,
-                "regex-rule": "[a-zA-Z]*", // Correct inputs will be: [music, device, waterTemperature]
+                "regex-rule": "[a-zA-Z]*", // Correct inputs will be: [music, device, waterTemperature, musicVolume]
                 "optional": true
             }
             ]

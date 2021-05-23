@@ -6,7 +6,7 @@
         "1":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XPOST 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XPOST 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",
@@ -37,7 +37,7 @@
         "2":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XPOST 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XPOST 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",
@@ -60,7 +60,7 @@
                 "description": "Parameter value for the setting chosen",
                 "token-type":"string",
                 "byte-size":10,
-                "regex-rule": "[a-zA-Z0-9]*", // Correct inputs will be: [A device code]
+                "regex-rule": "[a-zA-Z0-9]*", // Correct inputs will be: [A device code, disconnect]
                 "optional": false
             }
             ]
@@ -68,7 +68,7 @@
         "3":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XPOST 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XPOST 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",
@@ -101,7 +101,7 @@
         "1":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XGET 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XGET 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",
@@ -124,7 +124,7 @@
         "2":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XGET 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XGET 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",
@@ -139,7 +139,7 @@
         "3":{
             "token-delimitators": "",
             "protocol": "HTTP",
-            "prefix": "curl -XGET 'http://127.0.0.1:8080/'",
+            "prefix": "curl -XGET 'http://127.0.0.1:9080/'",
             "buffer-tokens":[
             {
                 "name":"Shower options",

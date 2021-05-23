@@ -8,7 +8,7 @@
 #include <pistache/router.h>
 #include <pistache/endpoint.h>
 #include <pistache/common.h>
-
+#include <string.h>
 #include <signal.h>
 
 using namespace std;
@@ -37,9 +37,9 @@ namespace Generic {
 }
 
 // Definition of the MicrowaveEnpoint class 
-class MicrowaveEndpoint {
+class ShowerEndpoint {
 public:
-    explicit MicrowaveEndpoint(Address addr)
+    explicit ShowerEndpoint(Address addr)
         : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
     { }
 
@@ -67,32 +67,49 @@ private:
     void setupRoutes() {
         using namespace Rest;
         // Defining various endpoints
-        // Generally say that when http://localhost:9080/ready is called, the handleReady function should be called. 
-        Routes::Get(router, "/ready", Routes::bind(&Generic::handleReady));
-        Routes::Get(router, "/auth", Routes::bind(&MicrowaveEndpoint::doAuth, this));
-        Routes::Post(router, "/settings/:settingName/:value", Routes::bind(&MicrowaveEndpoint::setSetting, this));
-        Routes::Get(router, "/settings/:settingName/", Routes::bind(&MicrowaveEndpoint::getSetting, this));
+        Routes::Get(router, "/turnWaterOn", Routes::bind(&ShowerEndpoint::turnWaterOn, this));
+        Routes::Get(router, "/turnWaterOff", Routes::bind(&ShowerEndpoint::turnWaterOff, this));
+        Routes::Post(router, "/settings/:settingName/:value", Routes::bind(&ShowerEndpoint::setSetting, this));
+        Routes::Get(router, "/settings/:settingName/", Routes::bind(&ShowerEndpoint::getSetting, this));
     }
 
     
-    void doAuth(const Rest::Request& request, Http::ResponseWriter response) {
-        // Function that prints cookies
-        printCookies(request);
-        // In the response object, it adds a cookie regarding the communications language.
-        response.cookies()
-            .add(Http::Cookie("lang", "en-US"));
+    void turnWaterOn(const Rest::Request& request, Http::ResponseWriter response) {
+
+        int res = shr.turnWaterOn();
         // Send the response
-        response.send(Http::Code::Ok);
+        if(res == 1){
+        response.send(Http::Code::Ok, "Water has been turned on \n");
+
+        }else {
+        response.send(Http::Code::Bad_Request, "Cannot turn water on \n");
+
+        }
     }
 
-    // Endpoint to configure one of the Microwave's settings.
+    void turnWaterOff(const Rest::Request& request, Http::ResponseWriter response) {
+      
+       
+        int res = shr.turnWaterOff();
+        // Send the response
+        if(res == 1){
+        response.send(Http::Code::Ok, "Water has been turned off \n");
+
+        }else {
+        response.send(Http::Code::Bad_Request, "Cannot turn water off \n");
+
+        }
+    }
+
+
+    // Endpoint to configure one of the Shower's settings.
     void setSetting(const Rest::Request& request, Http::ResponseWriter response){
         // You don't know what the parameter content that you receive is, but you should
         // try to cast it to some data structure. Here, I cast the settingName to string.
         auto settingName = request.param(":settingName").as<std::string>();
 
         // This is a guard that prevents editing the same value by two concurent threads. 
-        Guard guard(microwaveLock);
+        Guard guard(showerLock);
 
         
         string val = "";
@@ -101,27 +118,27 @@ private:
             val = value.as<string>();
         }
 
-        // Setting the microwave's setting to value
-        int setResponse = mwv.set(settingName, val);
+        // Setting the shower's setting to value
+        int setResponse = shr.set(settingName, val);
 
         // Sending some confirmation or error response.
         if (setResponse == 1) {
-            response.send(Http::Code::Ok, settingName + " was set to " + val);
+            response.send(Http::Code::Ok, settingName + " was set to " + val + "\n");
          
         }
         else {
-            response.send(Http::Code::Not_Found, settingName + " was not found and or '" + val + "' was not a valid value ");
+            response.send(Http::Code::Not_Found, settingName + " was not found and or '" + val + "' was not a valid value \n");
         }
 
     }
 
-    // Setting to get the settings value of one of the configurations of the Microwave
+    // Setting to get the settings value of one of the configurations of the Shower
     void getSetting(const Rest::Request& request, Http::ResponseWriter response){
         auto settingName = request.param(":settingName").as<std::string>();
 
-        Guard guard(microwaveLock);
+        Guard guard(showerLock);
 
-        string valueSetting = mwv.get(settingName);
+        string valueSetting = shr.get(settingName);
 
         if (valueSetting != "") {
 
@@ -131,59 +148,153 @@ private:
                         .add<Header::Server>("pistache/0.1")
                         .add<Header::ContentType>(MIME(Text, Plain));
 
-            response.send(Http::Code::Ok, settingName + " is " + valueSetting);
+            response.send(Http::Code::Ok, settingName + " is " + valueSetting + "\n");
         }
         else {
-            response.send(Http::Code::Not_Found, settingName + " was not found");
+            response.send(Http::Code::Not_Found, settingName + " was not found\n");
         }
     }
 
-    // Defining the class of the Microwave. It should model the entire configuration of the Microwave
-    class Microwave {
+    // Defining the class of the Shower. It should model the entire configuration of the Shower
+    class Shower {
     public:
-        explicit Microwave(){ }
+        explicit Shower(){ showerStatus = false; connectedDevice.connected = false; music = false;}
 
         // Setting the value for one of the settings. Hardcoded for the defrosting option
         int set(std::string name, std::string value){
-            if(name == "defrost"){
-                defrost.name = name;
-                if(value == "true"){
-                    defrost.value = true;
-                    return 1;
+            
+            if(name == "waterTemperature"){
+                waterTemperature.name = name;
+
+                int temp = std::stoi(value);
+                if(showerStatus == false || temp < 20 || temp > 59){
+                    return 0;
                 }
-                if(value == "false"){
-                    defrost.value = false;
-                    return 1;
-                }
+                waterTemperature.value = temp;
+
+                return 1;
             }
+
+            if(name == "music"){
+
+             if(value == "on"){
+
+                 if(music == true)
+                 {return 0;}
+
+                music = true;
+
+                return 1;
+
+             }else if(value == "off"){
+
+                if(music == false)
+                 {return 0;}
+
+                 music = false;
+
+                 return 1;
+             }
+            }
+
+             if(name == "pairDevice"){
+
+                if(value == "disconnect"){
+
+                    if(!connectedDevice.connected){
+                        return 0;
+                    }
+                    
+                    connectedDevice.connected = false;
+                    connectedDevice.name = "";
+
+                    return 1;
+                }
+
+                 connectedDevice.name = value;
+                 connectedDevice.connected = true;
+
+                 return 1;
+                 
+             }
+
+            
+
+
             return 0;
         }
 
+        int turnWaterOn(){
+
+            if(showerStatus == true){
+                return 0;
+            }
+
+            showerStatus = true;
+            return 1;
+        }
+
+
+        int turnWaterOff(){
+
+            if(showerStatus == false){
+                return 0;
+            }
+
+            showerStatus = false;
+            return 1;
+        }
+
+
+
+
         // Getter
         string get(std::string name){
-            if (name == "defrost"){
-                return std::to_string(defrost.value);
+
+
+            if (name == "waterTemperature"){
+            if(showerStatus == false){
+                    return "";
+                }   
+                return std::to_string(waterTemperature.value);
             }
-            else{
-                return "";
+
+            if(name == "music"){
+                return music ? "turned on" : "turned off";
             }
+
+            if(name == "pairDevice"){
+                return connectedDevice.connected ? "connected to " + connectedDevice.name : "not connected";
+            }
+
+            return "";
+
         }
 
     private:
         // Defining and instantiating settings.
-        struct boolSetting{
+        struct intSettings{
             std::string name;
-            bool value;
-        }defrost;
+            int value;
+        }waterTemperature;
+
+        struct stringSettings{
+            std::string name;
+            bool connected;
+        }connectedDevice;
+
+        bool music;
+
+        bool showerStatus;
     };
 
     // Create the lock which prevents concurrent editing of the same variable
     using Lock = std::mutex;
     using Guard = std::lock_guard<Lock>;
-    Lock microwaveLock;
+    Lock showerLock;
 
-    // Instance of the microwave model
-    Microwave mwv;
+    // Instance of the shower model
+    Shower shr;
 
     // Defining the httpEndpoint and a router.
     std::shared_ptr<Http::Endpoint> httpEndpoint;
@@ -222,7 +333,7 @@ int main(int argc, char *argv[]) {
     cout << "Using " << thr << " threads" << endl;
 
     // Instance of the class that defines what the server can do.
-    MicrowaveEndpoint stats(addr);
+    ShowerEndpoint stats(addr);
 
     // Initialize and start the server
     stats.init(thr);

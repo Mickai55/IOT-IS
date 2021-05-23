@@ -183,6 +183,7 @@ private:
                  {return 0;}
 
                 music = true;
+                musicVolume = 50;
 
                 return 1;
 
@@ -197,7 +198,23 @@ private:
              }
             }
 
-             if(name == "pairDevice"){
+            if(name == "musicVolume"){
+                if (music == false) {
+                    return 0;
+                }
+
+                const int volume = std::stoi(value);
+
+                if (volume < 0 || volume > 100) {
+                    return 0;
+                }
+
+                musicVolume = volume;
+
+                return 1;
+            }
+
+            if(name == "pairDevice"){
 
                 if(value == "disconnect"){
 
@@ -267,6 +284,10 @@ private:
                 return connectedDevice.connected ? "connected to " + connectedDevice.name : "not connected";
             }
 
+            if(name == "musicVolume"){
+                return std::to_string(musicVolume);
+            }
+
             return "";
 
         }
@@ -286,6 +307,8 @@ private:
         bool music;
 
         bool showerStatus;
+
+        int musicVolume;
     };
 
     // Create the lock which prevents concurrent editing of the same variable
